@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>학교 축제 플리마켓 기부 및 쿠폰 발급</title>
+    <style>
+        body { font-family: 'Malgun Gothic', sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; display: flex; justify-content: center; }
+        .container { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 500px; }
+        h2 { text-align: center; color: #333; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #555; }
+        input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background-color: #4CAF50; color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; font-weight: bold; }
+        button:hover { background-color: #45a049; }
+        .admin-section { margin-top: 30px; border-top: 2px dashed #ddd; padding-top: 20px; }
+        .hidden { display: none; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        th { background-color: #f2f2f2; }
+        .success-msg { color: #4CAF50; text-align: center; font-weight: bold; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>🎁 플리마켓 물품 기부 접수</h2>
+    
+    <!-- 기부 접수 폼 -->
+    <form id="donationForm">
+        <div class="form-group">
+            <label for="classNo">반 번호 (예: 20315)</label>
+            <input type="text" id="classNo" required placeholder="예: 20315">
+        </div>
+        <div class="form-group">
+            <label for="name">이름</label>
+            <input type="text" id="name" required placeholder="이름 입력">
+        </div>
+        <div class="form-group">
+            <label for="item">기부 물품</label>
+            <input type="text" id="item" required placeholder="기부할 물품 이름 입력">
+        </div>
+        <button type="submit">기부하고 쿠폰 받기</button>
+    </form>
+    <div id="msg"></div>
+
+    <!-- 관리자 확인 영역 -->
+    <div class="admin-section">
+        <h3>🔒 주최측(관리자) 확인용</h3>
+        <div id="loginBox">
+            <input type="password" id="adminPassword" placeholder="비밀번호 입력 (2026)" style="margin-bottom: 10px;">
+            <button type="button" onclick="checkPassword()" style="background-color: #2196F3;">기부자 목록 조회</button>
+        </div>
+
+        <div id="adminContent" class="hidden">
+            <p style="color: green; font-weight: bold;">✔ 인증되었습니다.</p>
+            <button type="button" onclick="loadDonations()" style="background-color: #ff9800; margin-bottom: 10px;">데이터 새로고침</button>
+            <div style="max-height: 250px; overflow-y: auto;">
+                <table id="dataTable">
+                    <thead>
+                        <tr>
+                            <th>시간</th>
+                            <th>반번호</th>
+                            <th>이름</th>
+                            <th>기부물품</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- 데이터가 여기에 동적으로 들어갑니다 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ⚠️ 아래에 위에서 복사한 구글 앱스 스크립트 웹 앱 URL을 붙여넣으세요.
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwwpR69WaRKs_5A0qfRX9_6fZHo-P3IKFiZwX12vdUYZMgwl-a1-k9rtE4_85ExTHWilw/exec"
+    // 1. 기부 정보 제출
+    document.getElementById('donationForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const classNo = document.getElementById('classNo').value;
+        const name = document.getElementById('name').value;
+        const item = document.getElementById('item').value;
+        
+        const submitBtn = e.target.querySelector('button');
+        submitBtn.disabled = true;
+        submitBtn.innerText = "저장 중...";
+
+        fetch(SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify({ classNo, name, item })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if(data.status === 'success') {
+                document.getElementById('msg').innerHTML = `<p class="success-msg">🎉 기부가 완료되었습니다! 쿠폰이 발행되었습니다.</p>`;
+                document.getElementById('donationForm').reset();
+            } else {
+                alert('저장 중 오류가 발생했습니다.');
+            }
+            submitBtn.disabled = false;
+            submitBtn.innerText = "기부하고 쿠폰 받기";
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('서버 통신 오류가 발생했습니다.');
+            submitBtn.disabled = false;
+            submitBtn.innerText = "기부하고 쿠폰 받기";
+        });
+    });
+
+    // 2. 비밀번호 확인 (2026)
+    function checkPassword() {
+        const pw = document.getElementById('adminPassword').value;
+        if(pw === "2026") {
+            document.getElementById('loginBox').classList.add('hidden');
+            document.getElementById('adminContent').classList.remove('hidden');
+            loadDonations();
+        } else {
+            alert('비밀번호가 틀렸습니다!');
+        }
+    }
+
+    // 3. 기부자 목록 불러오기
+    function loadDonations() {
+        const tbody = document.querySelector('#dataTable tbody');
+        tbody.innerHTML = `<tr><td colspan="4">불러오는 중...</td></tr>`;
+
+        fetch(SCRIPT_URL)
+        .then(response => response.json())
+        .then(data => {
+            tbody.innerHTML = "";
+            if(data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4">기부된 내역이 없습니다.</td></tr>`;
+                return;
+            }
+            // 최신순으로 정렬하려면 reverse() 추가 가능
+            data.reverse().forEach(row => {
+                const tr = document.createElement('tr');
+                // row[0]: 시간, row[1]: 반번호, row[2]: 이름, row[3]: 기부물품
+                const dateStr = new Date(row[0]).toLocaleString();
+                tr.innerHTML = `
+                    <td>${dateStr}</td>
+                    <td>${row[1]}</td>
+                    <td>${row[2]}</td>
+                    <td>${row[3]}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            tbody.innerHTML = `<tr><td colspan="4">데이터를 불러오지 못했습니다.</td></tr>`;
+        });
+    }
+</script>
+
+</body>
+</html>
